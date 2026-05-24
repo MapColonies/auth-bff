@@ -11,8 +11,9 @@ import { collectMetricsExpressMiddleware } from '@map-colonies/prometheus';
 import { Registry } from 'prom-client';
 import type { ConfigType } from '@common/config';
 import { SERVICES } from '@common/constants';
-import { RESOURCE_NAME_ROUTER_SYMBOL } from './resourceName/routes/resourceNameRouter';
-import { ANOTHER_RESOURCE_ROUTER_SYMBOL } from './anotherResource/routes/anotherResourceRouter';
+import { CAPABILITIES_ROUTER_SYMBOL } from './capabilities/routes/capabilitiesRouter';
+import { MANAGER_ROUTER_SYMBOL } from './manager/routes/managerRouter';
+import { OPA_ROUTER_SYMBOL } from './opa/routes/opaRouter';
 
 @injectable()
 export class ServerBuilder {
@@ -22,8 +23,9 @@ export class ServerBuilder {
     @inject(SERVICES.CONFIG) private readonly config: ConfigType,
     @inject(SERVICES.LOGGER) private readonly logger: Logger,
     @inject(SERVICES.METRICS) private readonly metricsRegistry: Registry,
-    @inject(RESOURCE_NAME_ROUTER_SYMBOL) private readonly resourceNameRouter: Router,
-    @inject(ANOTHER_RESOURCE_ROUTER_SYMBOL) private readonly anotherResourceRouter: Router
+    @inject(CAPABILITIES_ROUTER_SYMBOL) private readonly capabilitiesRouter: Router,
+    @inject(MANAGER_ROUTER_SYMBOL) private readonly managerRouter: Router,
+    @inject(OPA_ROUTER_SYMBOL) private readonly opaRouter: Router
   ) {
     this.serverInstance = express();
   }
@@ -46,8 +48,9 @@ export class ServerBuilder {
   }
 
   private buildRoutes(): void {
-    this.serverInstance.use('/resourceName', this.resourceNameRouter);
-    this.serverInstance.use('/anotherResource', this.anotherResourceRouter);
+    this.serverInstance.use('/capabilities', this.capabilitiesRouter);
+    this.serverInstance.use('/manager', this.managerRouter);
+    this.serverInstance.use('/opa', this.opaRouter);
     this.buildDocsRoutes();
   }
 
@@ -61,7 +64,7 @@ export class ServerBuilder {
 
     this.serverInstance.use(bodyParser.json(this.config.get('server.request.payload')));
 
-    const ignorePathRegex = new RegExp(`^${this.config.get('openapiConfig.basePath')}/.*`, 'i');
+    const ignorePathRegex = new RegExp(`^(${this.config.get('openapiConfig.basePath')}|/manager|/opa)/.*`, 'i');
     const apiSpecPath = this.config.get('openapiConfig.filePath');
     this.serverInstance.use(OpenApiMiddleware({ apiSpec: apiSpecPath, validateRequests: true, ignorePaths: ignorePathRegex }));
   }

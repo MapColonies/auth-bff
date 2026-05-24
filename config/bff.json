@@ -1,0 +1,18 @@
+{
+  "site": "AZURE",
+  "cors": {
+    "allowedDomains": ["http://localhost:3000", "https://auth.mapcolonies.net"]
+  },
+  "manager": {
+    "enabled": true,
+    "url": "https://auth-manager-infra-services.apps.j1lk3njp.eastus.aroapp.io"
+  },
+  "opa": {
+    "enabled": true,
+    "servers": {
+      "dev": "http://opa-dev-opa-service.infra-services.svc.cluster.local:8181",
+      "int": "http://opa-int-opa-service.infra-services.svc.cluster.local:8181",
+      "qa": "http://opa-qa-opa-service.infra-services.svc.cluster.local:8181"
+    }
+  }
+}

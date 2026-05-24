@@ -1,74 +1,25 @@
 openapi: 3.0.1
 info:
-  title: service-name
-  description: basic template for map colonies service
+  title: auth-manager-bff
+  description: Backend-For-Frontend service for the auth-ui. Provides capabilities discovery and proxies traffic to auth-manager and OPA servers.
   version: 1.0.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
 paths:
-  /anotherResource:
+  /capabilities:
     get:
-      operationId: getAnotherResource
+      operationId: getCapabilities
       tags:
-        - anotherResource
-      summary: gets the resource
+        - Capabilities
+      summary: Returns the current BFF capabilities so the UI can adapt its interface
       responses:
         200:
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/anotherResource'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /resourceName:
-    get:
-      operationId: getResourceName
-      tags:
-        - resourceName
-      summary: gets the resource
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/resource'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      operationId: createResource
-      tags:
-        - resourceName
-      summary: creates a new record of type resource
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/resource'
-      responses:
-        201:
-          description: created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/resource'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
+                $ref: '#/components/schemas/capabilities'
 security:
   - {}
 components:
@@ -80,27 +31,34 @@ components:
       properties:
         message:
           type: string
-    resource:
+    capabilities:
       type: object
       required:
-        - id
-        - name
-        - description
+        - site
+        - environments
+        - features
       properties:
-        id:
-          type: number
-          format: int64
-        name:
+        site:
           type: string
-        description:
-          type: string
-    anotherResource:
-      type: object
-      required:
-        - kind
-        - isAlive
-      properties:
-        kind:
-          type: string
-        isAlive:
-          type: boolean
+          description: The identifier of the current deployment site
+          example: israel-dc-1
+        environments:
+          type: array
+          description: List of OPA environment names available on this node
+          items:
+            type: string
+          example: ['np', 'stage', 'prod']
+        features:
+          type: object
+          required:
+            - managerEnabled
+            - opaEnabled
+          properties:
+            managerEnabled:
+              type: boolean
+              description: Whether the auth-manager proxy is enabled on this node
+              example: true
+            opaEnabled:
+              type: boolean
+              description: Whether the OPA proxy is enabled on this node
+              example: true

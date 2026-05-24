@@ -4,35 +4,17 @@
 
 import type { TypedRequestHandlers as ImportedTypedRequestHandlers } from '@map-colonies/openapi-helpers/typedRequestHandler';
 export type paths = {
-  '/anotherResource': {
+  '/capabilities': {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** gets the resource */
-    get: operations['getAnotherResource'];
+    /** Returns the current BFF capabilities so the UI can adapt its interface */
+    get: operations['getCapabilities'];
     put?: never;
     post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/resourceName': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** gets the resource */
-    get: operations['getResourceName'];
-    put?: never;
-    /** creates a new record of type resource */
-    post: operations['createResource'];
     delete?: never;
     options?: never;
     head?: never;
@@ -46,15 +28,33 @@ export type components = {
     error: {
       message: string;
     };
-    resource: {
-      /** Format: int64 */
-      id: number;
-      name: string;
-      description: string;
-    };
-    anotherResource: {
-      kind: string;
-      isAlive: boolean;
+    capabilities: {
+      /**
+       * @description The identifier of the current deployment site
+       * @example israel-dc-1
+       */
+      site: string;
+      /**
+       * @description List of OPA environment names available on this node
+       * @example [
+       *       "np",
+       *       "stage",
+       *       "prod"
+       *     ]
+       */
+      environments: string[];
+      features: {
+        /**
+         * @description Whether the auth-manager proxy is enabled on this node
+         * @example true
+         */
+        managerEnabled: boolean;
+        /**
+         * @description Whether the OPA proxy is enabled on this node
+         * @example true
+         */
+        opaEnabled: boolean;
+      };
     };
   };
   responses: never;
@@ -65,7 +65,7 @@ export type components = {
 };
 export type $defs = Record<string, never>;
 export interface operations {
-  getAnotherResource: {
+  getCapabilities: {
     parameters: {
       query?: never;
       header?: never;
@@ -80,78 +80,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['anotherResource'];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['error'];
-        };
-      };
-    };
-  };
-  getResourceName: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['resource'];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['error'];
-        };
-      };
-    };
-  };
-  createResource: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['resource'];
-      };
-    };
-    responses: {
-      /** @description created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['resource'];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['error'];
+          'application/json': components['schemas']['capabilities'];
         };
       };
     };
