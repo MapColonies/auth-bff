@@ -1,4 +1,4 @@
-import { Router, type Request, type Response, type NextFunction } from 'express';
+import { Router, type Request, type Response, type NextFunction, type RequestHandler } from 'express';
 import httpStatus from 'http-status-codes';
 import type { FactoryFunction } from 'tsyringe';
 import { createProxyMiddleware } from 'http-proxy-middleware';
@@ -7,6 +7,15 @@ import { getBffConfig } from '@common/bffConfig';
 // Placeholder — will validate JWTs in the future auth phase
 const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   next();
+};
+
+type AsyncRequestHandler = (req: Request, res: Response, next: NextFunction) => Promise<unknown>;
+
+// 2. Create the wrapper that returns a standard Express RequestHandler
+const asyncHandler = (fn: AsyncRequestHandler): RequestHandler => {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
 };
 
 const managerRouterFactory: FactoryFunction<Router> = () => {
@@ -24,18 +33,17 @@ const managerRouterFactory: FactoryFunction<Router> = () => {
 
   router.use('/', authMiddleware);
 
-  router.use(
-    '/',
-    createProxyMiddleware({
-      target: bffConfig.manager.url,
-      changeOrigin: true,
-      on: {
-        error: (err, req, res) => {
-          (res as Response).status(httpStatus.BAD_GATEWAY).json({ message: 'Auth Manager is currently unreachable' });
-        },
+  const managerHandler = createProxyMiddleware({
+    target: bffConfig.manager.url,
+    changeOrigin: true,
+    on: {
+      error: (err, req, res) => {
+        (res as Response).status(httpStatus.BAD_GATEWAY).json({ message: 'Auth Manager is currently unreachable' });
       },
-    })
-  );
+    },
+  });
+
+  router.use('/', asyncHandler(managerHandler));
 
   return router;
 };
