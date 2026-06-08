@@ -7,6 +7,8 @@ import { getBffConfig } from '@common/bffConfig';
 // Single source of truth — type comes from the spec, not a manual definition
 export type CapabilitiesResponse = components['schemas']['capabilities'];
 
+//add ll validation logic to the model layer
+
 @injectable()
 export class CapabilitiesManager {
   public constructor(@inject(SERVICES.LOGGER) private readonly logger: Logger) {}

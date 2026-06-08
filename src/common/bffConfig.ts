@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+type Environment = 'np' | 'stage' | 'prod';
+
 interface BffConfig {
   site: string;
   cors: {
@@ -12,7 +14,7 @@ interface BffConfig {
   };
   opa: {
     enabled: boolean;
-    servers: Record<string, string>;
+    servers: Record<Environment, string>;
   };
 }
 
@@ -43,7 +45,10 @@ function resolveConfig(): BffConfig {
     opa: {
       enabled: process.env['BFF_OPA_ENABLED'] !== undefined ? process.env['BFF_OPA_ENABLED'] === 'true' : fileConfig.opa.enabled,
       // JSON string: '{"np":"http://opa-np:8181","prod":"http://opa-prod:8181"}'
-      servers: process.env['BFF_OPA_SERVERS'] ? (JSON.parse(process.env['BFF_OPA_SERVERS']) as Record<string, string>) : fileConfig.opa.servers,
+      servers:
+        process.env['BFF_OPA_SERVERS'] !== undefined
+          ? (JSON.parse(process.env['BFF_OPA_SERVERS']) as Record<string, string>)
+          : fileConfig.opa.servers,
     },
   };
 }
@@ -57,4 +62,4 @@ export function getBffConfig(): BffConfig {
   return bffConfigInstance;
 }
 
-export type { BffConfig };
+export type { BffConfig, Environment };
