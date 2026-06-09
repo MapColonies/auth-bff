@@ -7,30 +7,33 @@
   },
   "telemetry": {
     "metrics": {},
-    "tracing": {
-      "isEnabled": false
-    },
+    "tracing": { "isEnabled": false },
     "shared": {},
     "logger": {
       "level": "info",
       "prettyPrint": false,
-      "opentelemetryOptions": {
-        "enabled": false
-      }
+      "opentelemetryOptions": { "enabled": false }
     }
   },
   "server": {
     "port": 8080,
-    "request": {
-      "payload": {
-        "limit": "1mb"
-      }
-    },
-    "response": {
-      "compression": {
-        "enabled": true,
-        "options": null
-      }
+    "request": { "payload": { "limit": "1mb" } },
+    "response": { "compression": { "enabled": true, "options": null } }
+  },
+  "site": "AZURE",
+  "cors": {
+    "allowedDomains": ["http://localhost:3000", "https://auth.mapcolonies.net"]
+  },
+  "manager": {
+    "enabled": true,
+    "url": "https://auth-manager-infra-services.apps.j1lk3njp.eastus.aroapp.io"
+  },
+  "opa": {
+    "enabled": true,
+    "servers": {
+      "prod": "http://opa-dev-opa-service.infra-services.svc.cluster.local:8181",
+      "stage": "http://opa-int-opa-service.infra-services.svc.cluster.local:8181",
+      "np": "http://opa-qa-opa-service.infra-services.svc.cluster.local:8181"
     }
   }
 }

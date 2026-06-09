@@ -1,4 +1,4 @@
-import httpStatus from 'http-status-codes'; // provide status code constants for to avoid status code in numbers for more readable code
+import httpStatus from 'http-status-codes';
 import { injectable, inject } from 'tsyringe';
 import type { Logger } from '@map-colonies/js-logger';
 import type { TypedRequestHandlers } from '@openapi';

@@ -1,13 +1,10 @@
 import { inject, injectable } from 'tsyringe';
 import type { Logger } from '@map-colonies/js-logger';
-import type { components } from '@openapi'; // auto-generated from openapi3.yaml
+import type { components } from '@openapi';
 import { SERVICES } from '@common/constants';
-import { getBffConfig } from '@common/bffConfig';
+import { getConfig } from '@common/config'; // ← replaces getBffConfig
 
-// Single source of truth — type comes from the spec, not a manual definition
 export type CapabilitiesResponse = components['schemas']['capabilities'];
-
-//add ll validation logic to the model layer
 
 @injectable()
 export class CapabilitiesManager {
@@ -16,14 +13,14 @@ export class CapabilitiesManager {
   public getCapabilities(): CapabilitiesResponse {
     this.logger.info({ msg: 'getting capabilities' });
 
-    const bffConfig = getBffConfig();
+    const config = getConfig();
 
     return {
-      site: bffConfig.site,
-      environments: Object.keys(bffConfig.opa.servers),
+      site: config.get('site'),
+      environments: Object.keys(config.get('opa.servers')),
       features: {
-        managerEnabled: bffConfig.manager.enabled,
-        opaEnabled: bffConfig.opa.enabled,
+        managerEnabled: config.get('manager.enabled'),
+        opaEnabled: config.get('opa.enabled'),
       },
     };
   }
