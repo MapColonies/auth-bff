@@ -2,7 +2,7 @@ import { inject, injectable } from 'tsyringe';
 import type { Logger } from '@map-colonies/js-logger';
 import type { components } from '@openapi';
 import { SERVICES } from '@common/constants';
-import { getConfig } from '@common/config'; // ← replaces getBffConfig
+import { getConfig } from '@common/config';
 
 export type CapabilitiesResponse = components['schemas']['capabilities'];
 
