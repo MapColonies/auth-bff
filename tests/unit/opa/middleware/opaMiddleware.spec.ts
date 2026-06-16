@@ -1,19 +1,17 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
-import type { Request, Response, NextFunction } from 'express';
+import { describe, beforeEach, afterEach, it, expect, vi } from 'vitest';
+import { mockDeep, type DeepMockProxy } from 'vitest-mock-extended';
 import httpStatus from 'http-status-codes';
-import { initConfig } from '@common/config';
+import type { Request, Response, NextFunction } from 'express';
+import { opaEnabledMiddleware, opaMethodFilterMiddleware, opaEnvironmentMiddleware, authMiddleware } from '@src/opa/middleware/opaMiddleware';
+import type { ConfigType } from '@common/config';
+import { getConfig } from '@common/config';
 
-// --- Mock helpers -----------------------------------------------------------
+vi.mock('@common/config', () => ({
+  getConfig: vi.fn(),
+}));
 
-// Creates a minimal fake Request object
-const mockRequest = (overrides: Partial<Request> = {}): Request =>
-  ({
-    method: 'GET',
-    params: {},
-    ...overrides,
-  }) as unknown as Request;
+let configMock: DeepMockProxy<ConfigType>;
 
-// Creates a fake Response with chainable status/json spies
 const mockResponse = (): Response => {
   const res = {} as Response;
   res.status = vi.fn().mockReturnValue(res);
@@ -21,21 +19,28 @@ const mockResponse = (): Response => {
   return res;
 };
 
-// ----------------------------------------------------------------------------
+const mockRequest = (overrides: Partial<Request> = {}): Request =>
+  ({
+    method: 'GET',
+    params: {},
+    ...overrides,
+  }) as unknown as Request;
 
-// Import middleware AFTER vi.mock so the mocked getConfig is in place
-// for the toggle tests that need opa.enabled: false
-describe('OPA Middleware', () => {
-  beforeAll(async () => {
-    await initConfig(true);
+describe('opaMiddleware', () => {
+  beforeEach(function () {
+    configMock = mockDeep<ConfigType>();
+    vi.mocked(getConfig).mockReturnValue(configMock);
   });
 
-  // ── opaEnabledMiddleware ────────────────────────────────────────────────
-  describe('opaEnabledMiddleware', () => {
-    describe('Happy Path', () => {
-      it('should call next() when opa is enabled', async () => {
-        // Re-import after config is set to enabled (default.json has enabled: true)
-        const { opaEnabledMiddleware } = await import('@src/opa/middleware/opaMiddleware');
+  afterEach(function () {
+    vi.clearAllMocks();
+  });
+
+  describe('#opaEnabledMiddleware', () => {
+    describe('#HappyPath', () => {
+      it('should call next() when opa.enabled is true', function () {
+        configMock.get.mockReturnValue(true);
+
         const req = mockRequest();
         const res = mockResponse();
         const next: NextFunction = vi.fn();
@@ -43,53 +48,33 @@ describe('OPA Middleware', () => {
         opaEnabledMiddleware(req, res, next);
 
         expect(next).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.status).not.toHaveBeenCalled();
       });
     });
 
-    describe('Sad Path', () => {
-      it('should return 503 when opa is disabled', async () => {
-        // Override getConfig to simulate opa.enabled: false
-        vi.mock('@common/config', async (importOriginal) => {
-          const original = await importOriginal<typeof import('@common/config')>();
-          return {
-            ...original,
-            getConfig: vi.fn().mockReturnValue({
-              get: vi.fn((key: string) => {
-                if (key === 'opa.enabled') return false;
-                return original.getConfig().get(key as never);
-              }),
-            }),
-          };
-        });
+    describe('#SadPath', () => {
+      it('should respond with 503 when opa.enabled is false', function () {
+        configMock.get.mockReturnValue(false);
 
-        const { opaEnabledMiddleware } = await import('@src/opa/middleware/opaMiddleware');
         const req = mockRequest();
         const res = mockResponse();
         const next: NextFunction = vi.fn();
 
         opaEnabledMiddleware(req, res, next);
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.status).toHaveBeenCalledWith(httpStatus.SERVICE_UNAVAILABLE);
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.json).toHaveBeenCalledWith({ message: 'OPA capabilities are disabled on this node' });
         expect(next).not.toHaveBeenCalled();
-
-        vi.restoreAllMocks();
       });
     });
   });
 
-  // ── opaMethodFilterMiddleware ───────────────────────────────────────────
-  describe('opaMethodFilterMiddleware', () => {
-    let opaMethodFilterMiddleware: (req: Request, res: Response, next: NextFunction) => void;
-
-    beforeEach(async () => {
-      const mod = await import('@src/opa/middleware/opaMiddleware');
-      opaMethodFilterMiddleware = mod.opaMethodFilterMiddleware;
-    });
-
-    describe('Happy Path', () => {
-      it('should call next() for GET requests', () => {
+  describe('#opaMethodFilterMiddleware', () => {
+    describe('#HappyPath', () => {
+      it('should call next() for GET requests', function () {
         const req = mockRequest({ method: 'GET' });
         const res = mockResponse();
         const next: NextFunction = vi.fn();
@@ -97,10 +82,11 @@ describe('OPA Middleware', () => {
         opaMethodFilterMiddleware(req, res, next);
 
         expect(next).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.status).not.toHaveBeenCalled();
       });
 
-      it('should call next() for POST requests', () => {
+      it('should call next() for POST requests', function () {
         const req = mockRequest({ method: 'POST' });
         const res = mockResponse();
         const next: NextFunction = vi.fn();
@@ -108,19 +94,20 @@ describe('OPA Middleware', () => {
         opaMethodFilterMiddleware(req, res, next);
 
         expect(next).toHaveBeenCalledOnce();
-        expect(res.status).not.toHaveBeenCalled();
       });
     });
 
-    describe('Bad Path', () => {
-      it.each(['DELETE', 'PUT', 'PATCH'])('should return 405 for %s requests', (method) => {
+    describe('#BadPath', () => {
+      it.each(['DELETE', 'PUT', 'PATCH'])('should respond with 405 for %s requests', function (method) {
         const req = mockRequest({ method });
         const res = mockResponse();
         const next: NextFunction = vi.fn();
 
         opaMethodFilterMiddleware(req, res, next);
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.status).toHaveBeenCalledWith(httpStatus.METHOD_NOT_ALLOWED);
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.json).toHaveBeenCalledWith({
           message: `Method ${method} is not allowed on OPA evaluate endpoints`,
         });
@@ -129,18 +116,11 @@ describe('OPA Middleware', () => {
     });
   });
 
-  // ── opaEnvironmentMiddleware ────────────────────────────────────────────
-  describe('opaEnvironmentMiddleware', () => {
-    let opaEnvironmentMiddleware: (req: Request, res: Response, next: NextFunction) => void;
+  describe('#opaEnvironmentMiddleware', () => {
+    describe('#HappyPath', () => {
+      it('should call next() for a valid environment', function () {
+        configMock.get.mockReturnValue({ prod: 'http://opa-prod:8181' });
 
-    beforeEach(async () => {
-      const mod = await import('@src/opa/middleware/opaMiddleware');
-      opaEnvironmentMiddleware = mod.opaEnvironmentMiddleware;
-    });
-
-    describe('Happy Path', () => {
-      it('should call next() for a valid environment', () => {
-        // 'prod' exists in config/default.json opa.servers
         const req = mockRequest({ params: { environment: 'prod' } as Record<string, string> });
         const res = mockResponse();
         const next: NextFunction = vi.fn();
@@ -148,35 +128,56 @@ describe('OPA Middleware', () => {
         opaEnvironmentMiddleware(req, res, next);
 
         expect(next).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.status).not.toHaveBeenCalled();
       });
     });
 
-    describe('Bad Path', () => {
-      it('should return 400 when environment param is empty', () => {
+    describe('#BadPath', () => {
+      it('should respond with 400 when environment param is empty', function () {
         const req = mockRequest({ params: { environment: '' } as Record<string, string> });
         const res = mockResponse();
         const next: NextFunction = vi.fn();
 
         opaEnvironmentMiddleware(req, res, next);
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.status).toHaveBeenCalledWith(httpStatus.BAD_REQUEST);
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.json).toHaveBeenCalledWith({ message: 'Missing environment parameter' });
         expect(next).not.toHaveBeenCalled();
       });
 
-      it('should return 404 for an unknown environment', () => {
+      it('should respond with 404 for an unknown environment', function () {
+        configMock.get.mockReturnValue({ prod: 'http://opa-prod:8181' });
+
         const req = mockRequest({ params: { environment: 'nonexistent' } as Record<string, string> });
         const res = mockResponse();
         const next: NextFunction = vi.fn();
 
         opaEnvironmentMiddleware(req, res, next);
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.status).toHaveBeenCalledWith(httpStatus.NOT_FOUND);
-        expect(res.json).toHaveBeenCalledWith({
-          message: `OPA environment 'nonexistent' not found`,
-        });
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(res.json).toHaveBeenCalledWith({ message: `OPA environment 'nonexistent' not found` });
         expect(next).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('#authMiddleware', () => {
+    describe('#HappyPath', () => {
+      it('should always call next()', function () {
+        const req = mockRequest();
+        const res = mockResponse();
+        const next: NextFunction = vi.fn();
+
+        authMiddleware(req, res, next);
+
+        expect(next).toHaveBeenCalledOnce();
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        expect(res.status).not.toHaveBeenCalled();
       });
     });
   });

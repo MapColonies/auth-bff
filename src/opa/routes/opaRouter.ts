@@ -1,15 +1,10 @@
-import { Router, type Request, type Response, type RequestHandler } from 'express';
+import { Router, type Request, type Response } from 'express';
 import httpStatus from 'http-status-codes';
 import type { FactoryFunction } from 'tsyringe';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { getConfig, type Environment } from '@common/config';
-import { opaEnabledMiddleware, opaMethodFilterMiddleware, opaEnvironmentMiddleware, authMiddleware } from './middleware/opaMiddleware';
-
-const asyncHandler = (fn: RequestHandler): RequestHandler => {
-  return (req, res, next) => {
-    void Promise.resolve(fn(req, res, next)).catch(next);
-  };
-};
+import { asyncHandler } from '@common/middleware/asyncHandler';
+import { opaEnabledMiddleware, opaMethodFilterMiddleware, opaEnvironmentMiddleware, authMiddleware } from '../middleware/opaMiddleware';
 
 const opaRouterFactory: FactoryFunction<Router> = () => {
   const router = Router();

@@ -3,13 +3,8 @@ import httpStatus from 'http-status-codes';
 import type { FactoryFunction } from 'tsyringe';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { getConfig } from '@common/config';
+import { asyncHandler } from '@common/middleware/asyncHandler';
 import { managerEnabledMiddleware, authMiddleware } from '../middleware/managerMiddleware';
-
-const asyncHandler = (fn: RequestHandler): RequestHandler => {
-  return (req, res, next) => {
-    void Promise.resolve(fn(req, res, next)).catch(next);
-  };
-};
 
 const managerRouterFactory: FactoryFunction<Router> = () => {
   const router = Router();
