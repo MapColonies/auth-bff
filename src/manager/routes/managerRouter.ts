@@ -1,14 +1,16 @@
-import { Router, type Request, type Response, type RequestHandler } from 'express';
+import { Router, type Response } from 'express';
 import httpStatus from 'http-status-codes';
 import type { FactoryFunction } from 'tsyringe';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import { getConfig } from '@common/config';
-import { asyncHandler } from '@common/middleware/asyncHandler';
-import { managerEnabledMiddleware, authMiddleware } from '../middleware/managerMiddleware';
+import { SERVICES } from '@common/constants';
+import type { ConfigType } from '@common/config';
+import { asyncHandler } from '@common/middlewares/asyncHandler';
+import { authMiddleware } from '@src/common/middlewares/authMiddleware';
+import { createManagerEnabledMiddleware } from '../middlewares/managerMiddleware';
 
-const managerRouterFactory: FactoryFunction<Router> = () => {
+const managerRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
+  const config = dependencyContainer.resolve<ConfigType>(SERVICES.CONFIG);
   const router = Router();
-  const config = getConfig();
 
   const managerHandler = createProxyMiddleware({
     target: config.get('manager.url'),
@@ -20,10 +22,9 @@ const managerRouterFactory: FactoryFunction<Router> = () => {
     },
   });
 
-  // Thin router — just wires guards and proxy in order
   router.use(
     '/',
-    managerEnabledMiddleware,
+    createManagerEnabledMiddleware(config),
     authMiddleware,
     asyncHandler((req, res, next) => {
       void managerHandler(req, res, next);

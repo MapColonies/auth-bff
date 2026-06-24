@@ -25,7 +25,7 @@ describe('CapabilitiesManager', () => {
   beforeEach(function () {
     configMock = mockDeep<ConfigType>();
     vi.mocked(getConfig).mockReturnValue(configMock);
-    capabilitiesManager = new CapabilitiesManager(logger);
+    capabilitiesManager = new CapabilitiesManager(logger, configMock);
   });
 
   afterEach(function () {

@@ -2,25 +2,26 @@ import { inject, injectable } from 'tsyringe';
 import type { Logger } from '@map-colonies/js-logger';
 import type { components } from '@openapi';
 import { SERVICES } from '@common/constants';
-import { getConfig } from '@common/config';
+import type { ConfigType } from '@common/config';
 
 export type CapabilitiesResponse = components['schemas']['capabilities'];
 
 @injectable()
 export class CapabilitiesManager {
-  public constructor(@inject(SERVICES.LOGGER) private readonly logger: Logger) {}
+  public constructor(
+    @inject(SERVICES.LOGGER) private readonly logger: Logger,
+    @inject(SERVICES.CONFIG) private readonly config: ConfigType
+  ) {}
 
   public getCapabilities(): CapabilitiesResponse {
     this.logger.info({ msg: 'getting capabilities' });
 
-    const config = getConfig();
-
     return {
-      site: config.get('site'),
-      environments: Object.keys(config.get('opa.servers')),
+      site: this.config.get('site'),
+      environments: Object.keys(this.config.get('opa.servers')),
       features: {
-        managerEnabled: config.get('manager.enabled'),
-        opaEnabled: config.get('opa.enabled'),
+        managerEnabled: this.config.get('manager.enabled'),
+        opaEnabled: this.config.get('opa.enabled'),
       },
     };
   }

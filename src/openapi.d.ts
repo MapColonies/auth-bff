@@ -11,7 +11,14 @@ export type paths = {
       path?: never;
       cookie?: never;
     };
-    /** Returns the current BFF capabilities so the UI can adapt its interface */
+    /**
+     * Get BFF capabilities
+     * @description Returns the current state of the BFF so the auth-ui can adapt its interface at startup.
+     *
+     *     The `environments` array is derived from the keys of the `opa.servers` config object — it represents the OPA environments reachable through this BFF node.
+     *
+     *     The `features` flags indicate whether the auth-manager and OPA proxy routes are enabled on this deployment. The UI should use these flags to conditionally render relevant functionality rather than calling the proxy routes and handling a 503 response.
+     */
     get: operations['getCapabilities'];
     put?: never;
     post?: never;
@@ -25,32 +32,46 @@ export type paths = {
 export type webhooks = Record<string, never>;
 export type components = {
   schemas: {
+    /** @description Standard error response returned by all BFF-native endpoints on failure. */
     error: {
+      /**
+       * @description Human-readable description of the error.
+       * @example config not initialized
+       */
       message: string;
     };
+    /**
+     * @description Describes the current capabilities of this BFF deployment node.
+     *     The auth-ui calls this endpoint on startup and uses the response to decide which features to render.
+     */
     capabilities: {
       /**
-       * @description The identifier of the current deployment site
+       * @description Identifier of the deployment site this BFF node is running on.
        * @example israel-dc-1
        */
       site: string;
       /**
-       * @description List of OPA environment names available on this node
+       * @description List of OPA environment names available through this BFF node.
+       *     Derived from the keys of the `opa.servers` configuration object.
+       *     The UI uses this list to populate environment selectors.
        * @example [
-       *       "np",
-       *       "stage",
-       *       "prod"
+       *       "prod",
+       *       "integration",
+       *       "qa"
        *     ]
        */
       environments: string[];
+      /** @description Feature flags indicating which proxy capabilities are active on this node. */
       features: {
         /**
-         * @description Whether the auth-manager proxy is enabled on this node
+         * @description Whether the `/manager/*` proxy route is enabled on this node.
+         *     When `false`, all requests to `/manager/*` return `503 Service Unavailable`.
          * @example true
          */
         managerEnabled: boolean;
         /**
-         * @description Whether the OPA proxy is enabled on this node
+         * @description Whether the `/opa/*` proxy route is enabled on this node.
+         *     When `false`, all requests to `/opa/*` return `503 Service Unavailable`.
          * @example true
          */
         opaEnabled: boolean;
@@ -74,13 +95,41 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description OK */
+      /** @description Capabilities retrieved successfully. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "site": "israel-dc-1",
+           *       "environments": [
+           *         "prod",
+           *         "integration",
+           *         "qa"
+           *       ],
+           *       "features": {
+           *         "managerEnabled": true,
+           *         "opaEnabled": true
+           *       }
+           *     }
+           */
           'application/json': components['schemas']['capabilities'];
+        };
+      };
+      /** @description Internal server error — an unexpected error occurred while building the capabilities response (e.g. config not initialised). */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "config not initialized"
+           *     }
+           */
+          'application/json': components['schemas']['error'];
         };
       };
     };

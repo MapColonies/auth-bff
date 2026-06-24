@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
-import { asyncHandler } from '@common/middleware/asyncHandler';
+import { asyncHandler } from '@src/common/middlewares/asyncHandler';
 
 describe('asyncHandler', () => {
   describe('#HappyPath', () => {

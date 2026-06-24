@@ -1,38 +1,89 @@
 openapi: 3.0.1
 info:
   title: auth-manager-bff
-  description: Backend-For-Frontend service for the auth-ui. Provides capabilities discovery and proxies traffic to auth-manager and OPA servers.
+  description: |-
+    Backend-For-Frontend (BFF) service for the auth-ui.
+
+    This service acts as the single entry point for the auth-ui, providing:
+    - **Capability discovery** — the UI calls `/capabilities` on startup to learn what is enabled on this deployment and adapts its interface accordingly.
+    - **Auth Manager proxy** — transparently forwards requests under `/manager/*` to the auth-manager service.
+    - **OPA proxy** — forwards policy evaluation requests under `/opa/{environment}/evaluate/*` to the appropriate OPA server, with method filtering and environment validation.
+
+    Proxy routes (`/manager/*`, `/opa/*`) are intentionally excluded from this spec — their contracts belong to auth-manager and OPA respectively.
   version: 1.0.0
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
+  contact:
+    name: MapColonies Auth Platform Team
+
+servers:
+  - url: /
+    description: Current deployment
+
+tags:
+  - name: Capabilities
+    description: BFF capability discovery endpoint. The auth-ui calls this on startup to determine which features and environments are available on the current deployment node.
+
 paths:
   /capabilities:
     get:
       operationId: getCapabilities
       tags:
         - Capabilities
-      summary: Returns the current BFF capabilities so the UI can adapt its interface
+      summary: Get BFF capabilities
+      description: |-
+        Returns the current state of the BFF so the auth-ui can adapt its interface at startup.
+
+        The `environments` array is derived from the keys of the `opa.servers` config object — it represents the OPA environments reachable through this BFF node.
+
+        The `features` flags indicate whether the auth-manager and OPA proxy routes are enabled on this deployment. The UI should use these flags to conditionally render relevant functionality rather than calling the proxy routes and handling a 503 response.
       responses:
-        200:
-          description: OK
+        '200':
+          description: Capabilities retrieved successfully.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/capabilities'
+              example:
+                site: israel-dc-1
+                environments:
+                  - prod
+                  - integration
+                  - qa
+                features:
+                  managerEnabled: true
+                  opaEnabled: true
+        '500':
+          description: Internal server error — an unexpected error occurred while building the capabilities response (e.g. config not initialised).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+              example:
+                message: config not initialized
+
 security:
   - {}
+
 components:
   schemas:
     error:
       type: object
+      description: Standard error response returned by all BFF-native endpoints on failure.
       required:
         - message
       properties:
         message:
           type: string
+          description: Human-readable description of the error.
+          example: config not initialized
+
     capabilities:
       type: object
+      description: |-
+        Describes the current capabilities of this BFF deployment node.
+        The auth-ui calls this endpoint on startup and uses the response to decide which features to render.
       required:
         - site
         - environments
@@ -40,25 +91,37 @@ components:
       properties:
         site:
           type: string
-          description: The identifier of the current deployment site
+          description: Identifier of the deployment site this BFF node is running on.
           example: israel-dc-1
         environments:
           type: array
-          description: List of OPA environment names available on this node
+          description: |-
+            List of OPA environment names available through this BFF node.
+            Derived from the keys of the `opa.servers` configuration object.
+            The UI uses this list to populate environment selectors.
           items:
             type: string
-          example: ['np', 'stage', 'prod']
+          minItems: 0
+          example:
+            - prod
+            - integration
+            - qa
         features:
           type: object
+          description: Feature flags indicating which proxy capabilities are active on this node.
           required:
             - managerEnabled
             - opaEnabled
           properties:
             managerEnabled:
               type: boolean
-              description: Whether the auth-manager proxy is enabled on this node
+              description: |-
+                Whether the `/manager/*` proxy route is enabled on this node.
+                When `false`, all requests to `/manager/*` return `503 Service Unavailable`.
               example: true
             opaEnabled:
               type: boolean
-              description: Whether the OPA proxy is enabled on this node
+              description: |-
+                Whether the `/opa/*` proxy route is enabled on this node.
+                When `false`, all requests to `/opa/*` return `503 Service Unavailable`.
               example: true
