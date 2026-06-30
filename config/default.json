@@ -26,14 +26,14 @@
   },
   "manager": {
     "enabled": true,
-    "url": "https://auth-manager-infra-services.apps.j1lk3njp.eastus.aroapp.io"
+    "url": "http://localhost:9"
   },
   "opa": {
     "enabled": true,
     "servers": {
-      "prod": "http://opa-dev-opa-service.infra-services.svc.cluster.local:8181",
-      "stage": "http://opa-int-opa-service.infra-services.svc.cluster.local:8181",
-      "np": "http://opa-qa-opa-service.infra-services.svc.cluster.local:8181"
+      "prod": "http://localhost:8181",
+      "stage": "http://localhost:8181",
+      "np": "http://localhost:8181"
     }
   }
 }

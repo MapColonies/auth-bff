@@ -6,7 +6,7 @@ import { SERVICES } from '@common/constants';
 import type { ConfigType } from '@common/config';
 import { asyncHandler } from '@common/middlewares/asyncHandler';
 import { authMiddleware } from '@src/common/middlewares/authMiddleware';
-import { createManagerEnabledMiddleware } from '../middlewares/managerMiddleware';
+import { createManagerEnabledMiddleware } from '../middleware/managerMiddleware';
 
 const managerRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
   const config = dependencyContainer.resolve<ConfigType>(SERVICES.CONFIG);

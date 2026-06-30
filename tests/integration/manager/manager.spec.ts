@@ -13,9 +13,10 @@ describe('manager', function () {
 
   beforeAll(async function () {
     await initConfig(true);
-  });
+    const config = getConfig();
+    const originalGet = config.get.bind(config);
+    vi.spyOn(config, 'get').mockImplementation((key: string) => (key === 'manager.url' ? 'http://127.0.0.1:9' : originalGet(key as never)));
 
-  beforeEach(async function () {
     [app] = await getApp({
       override: [
         { token: SERVICES.LOGGER, provider: { useValue: await jsLogger({ enabled: false }) } },
@@ -23,6 +24,8 @@ describe('manager', function () {
       ],
       useChild: true,
     });
+
+    vi.restoreAllMocks();
   });
 
   afterEach(function () {
@@ -42,7 +45,6 @@ describe('manager', function () {
     describe('Bad Path', function () {
       it('should return 503 when manager.enabled is false', async function () {
         const config = getConfig();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
         vi.spyOn(config, 'get').mockImplementation((key: string) => (key === 'manager.enabled' ? false : config.get(key as never)));
 
         const response = await agent(app).get('/manager/client');

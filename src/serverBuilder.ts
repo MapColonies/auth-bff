@@ -1,5 +1,4 @@
-import express, { Router } from 'express';
-import bodyParser from 'body-parser';
+import express, { json, Router } from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import { OpenapiViewerRouter } from '@map-colonies/openapi-express-viewer';
@@ -52,8 +51,10 @@ export class ServerBuilder {
     this.serverInstance.use('/capabilities', this.capabilitiesRouter);
     this.serverInstance.use('/manager', this.managerRouter);
     this.serverInstance.use('/opa', this.opaRouter);
+
     this.buildDocsRoutes();
   }
+
   private registerPreRoutesMiddleware(): void {
     // CORS must be first — before logging and any other middleware
     this.serverInstance.use(cors({ origin: this.config.get('cors.allowedDomains') }));
@@ -65,7 +66,7 @@ export class ServerBuilder {
       this.serverInstance.use(compression(this.config.get('server.response.compression.options') as unknown as compression.CompressionFilter));
     }
 
-    this.serverInstance.use('/capabilities', bodyParser.json(this.config.get('server.request.payload')));
+    this.serverInstance.use('/capabilities', json(this.config.get('server.request.payload')));
 
     const ignorePathRegex = new RegExp(`^(${this.config.get('openapiConfig.basePath')}|/manager|/opa)/.*`, 'i');
     const apiSpecPath = this.config.get('openapiConfig.filePath');

@@ -1,5 +1,5 @@
 import { jsLogger } from '@map-colonies/js-logger';
-import { describe, beforeEach, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { trace } from '@opentelemetry/api';
 import { StatusCodes } from 'http-status-codes';
 import { createRequestSender, type RequestSender } from '@map-colonies/openapi-helpers/requestSender';
@@ -13,9 +13,6 @@ describe('capabilities', function () {
 
   beforeAll(async function () {
     await initConfig(true);
-  });
-
-  beforeEach(async function () {
     const [app] = await getApp({
       override: [
         { token: SERVICES.LOGGER, provider: { useValue: await jsLogger({ enabled: false }) } },

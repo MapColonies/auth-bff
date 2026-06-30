@@ -6,7 +6,7 @@ import { SERVICES } from '@common/constants';
 import type { ConfigType, Environment } from '@common/config';
 import { asyncHandler } from '@common/middlewares/asyncHandler';
 import { authMiddleware } from '@common/middlewares/authMiddleware';
-import { createOpaEnabledMiddleware, opaMethodFilterMiddleware, createOpaEnvironmentMiddleware } from '../middleware/opaMiddleware';
+import { createOpaEnabledMiddleware, opaMethodFilterMiddleware, createOpaEnvironmentMiddleware } from '../middlewares/opaMiddleware';
 
 const opaRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
   const config = dependencyContainer.resolve<ConfigType>(SERVICES.CONFIG);

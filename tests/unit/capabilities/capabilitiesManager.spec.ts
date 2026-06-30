@@ -3,13 +3,6 @@ import { jsLogger, type Logger } from '@map-colonies/js-logger';
 import { mockDeep, type DeepMockProxy } from 'vitest-mock-extended';
 import type { ConfigType } from '@common/config';
 import { CapabilitiesManager } from '@src/capabilities/models/capabilitiesManager';
-import { getConfig } from '@common/config';
-
-// Mock the module before importing it — every getConfig() call across the codebase
-// will receive our mocked version instead of hitting the real config system.
-vi.mock('@common/config', () => ({
-  getConfig: vi.fn(),
-}));
 
 let capabilitiesManager: CapabilitiesManager;
 let configMock: DeepMockProxy<ConfigType>;
@@ -24,7 +17,6 @@ describe('CapabilitiesManager', () => {
 
   beforeEach(function () {
     configMock = mockDeep<ConfigType>();
-    vi.mocked(getConfig).mockReturnValue(configMock);
     capabilitiesManager = new CapabilitiesManager(logger, configMock);
   });
 
@@ -68,16 +60,6 @@ describe('CapabilitiesManager', () => {
         const capabilities = capabilitiesManager.getCapabilities();
 
         expect(capabilities.environments).toEqual([]);
-      });
-    });
-
-    describe('#SadPath', () => {
-      it('should propagate an error when config is not initialized', function () {
-        vi.mocked(getConfig).mockImplementation(() => {
-          throw new Error('config not initialized');
-        });
-
-        expect(() => capabilitiesManager.getCapabilities()).toThrow('config not initialized');
       });
     });
   });

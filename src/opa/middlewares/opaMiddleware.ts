@@ -40,8 +40,3 @@ export const createOpaEnvironmentMiddleware = (config: ConfigType) => {
     next();
   };
 };
-
-// No config dependency — stays as a plain function
-export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  next();
-};
