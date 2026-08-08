@@ -27,7 +27,7 @@ export const createOpaEnvironmentMiddleware = (config: ConfigType) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const { environment } = req.params;
 
-    if (!environment) {
+    if (environment === undefined || environment.length === 0) {
       res.status(httpStatus.BAD_REQUEST).json({ message: 'Missing environment parameter' });
       return;
     }

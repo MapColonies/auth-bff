@@ -74,8 +74,19 @@ describe('opa', function () {
     });
 
     describe('Sad Path', function () {
-      it('should in theory test 500 status code', function () {
-        expect(true).toBe(true);
+      it('should return 500 when opa.servers config is missing', async function () {
+        const config = getConfig();
+        const originalGet = config.get.bind(config);
+
+        // @ts-expect-error overriding get() for this test only
+        config.get = (key: string) => (key === 'opa.servers' ? undefined : originalGet(key));
+
+        const response = await agent(app).post('/opa/prod/evaluate/authz/allow');
+
+        expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toHaveProperty('message');
+
+        config.get = originalGet;
       });
     });
   });

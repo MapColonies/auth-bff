@@ -54,6 +54,14 @@ paths:
                 features:
                   managerEnabled: true
                   opaEnabled: true
+        '400':
+          description: Bad request — an unknown query parameter was supplied.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+              example:
+                message: Unknown query parameter 'foo'
         '500':
           description: Internal server error — an unexpected error occurred while building the capabilities response (e.g. config not initialised).
           content:

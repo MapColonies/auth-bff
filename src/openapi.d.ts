@@ -118,6 +118,20 @@ export interface operations {
           'application/json': components['schemas']['capabilities'];
         };
       };
+      /** @description Bad request — an unknown query parameter was supplied. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "Unknown query parameter 'foo'"
+           *     }
+           */
+          'application/json': components['schemas']['error'];
+        };
+      };
       /** @description Internal server error — an unexpected error occurred while building the capabilities response (e.g. config not initialised). */
       500: {
         headers: {

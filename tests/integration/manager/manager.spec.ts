@@ -1,5 +1,5 @@
 import { jsLogger } from '@map-colonies/js-logger';
-import { describe, beforeEach, afterEach, it, expect, beforeAll, vi } from 'vitest';
+import { describe, afterEach, it, expect, beforeAll, vi } from 'vitest';
 import { trace } from '@opentelemetry/api';
 import { StatusCodes } from 'http-status-codes';
 import { agent } from 'supertest';
@@ -55,8 +55,20 @@ describe('manager', function () {
     });
 
     describe('Sad Path', function () {
-      it('should in theory test 500 status code', function () {
-        expect(true).toBe(true);
+      it('should return 500 when an unexpected error is thrown while checking manager.enabled', async function () {
+        const config = getConfig();
+        const originalGet = config.get.bind(config);
+        vi.spyOn(config, 'get').mockImplementation((key: string) => {
+          if (key === 'manager.enabled') {
+            throw new Error('unexpected config error');
+          }
+          return originalGet(key as never);
+        });
+
+        const response = await agent(app).get('/manager/client');
+
+        expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
+        expect(response.body).toMatchObject({ message: 'unexpected config error' });
       });
     });
   });

@@ -48,7 +48,6 @@ describe('CapabilitiesController', () => {
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.status).toHaveBeenCalledWith(httpStatus.OK);
-        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(res.json).toHaveBeenCalledWith({
           site: 'AZURE',
           environments: ['prod', 'qa'],
