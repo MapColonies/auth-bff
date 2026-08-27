@@ -6,9 +6,10 @@ import { jsLogger } from '@map-colonies/js-logger';
 import { type InjectionObject, registerDependencies } from '@common/dependencyRegistration';
 import { SERVICES, SERVICE_NAME } from '@common/constants';
 import { getTracing } from '@common/tracing';
-import { resourceNameRouterFactory, RESOURCE_NAME_ROUTER_SYMBOL } from './resourceName/routes/resourceNameRouter';
-import { anotherResourceRouterFactory, ANOTHER_RESOURCE_ROUTER_SYMBOL } from './anotherResource/routes/anotherResourceRouter';
 import { getConfig } from './common/config';
+import { capabilitiesRouterFactory, CAPABILITIES_ROUTER_SYMBOL } from './capabilities/routes/capabilitiesRouter';
+import { managerRouterFactory, MANAGER_ROUTER_SYMBOL } from './manager/routes/managerRouter';
+import { opaRouterFactory, OPA_ROUTER_SYMBOL } from './opa/routes/opaRouter';
 
 export interface RegisterOptions {
   override?: InjectionObject<unknown>[];
@@ -31,8 +32,9 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
     { token: SERVICES.LOGGER, provider: { useValue: logger } },
     { token: SERVICES.TRACER, provider: { useValue: tracer } },
     { token: SERVICES.METRICS, provider: { useValue: metricsRegistry } },
-    { token: RESOURCE_NAME_ROUTER_SYMBOL, provider: { useFactory: resourceNameRouterFactory } },
-    { token: ANOTHER_RESOURCE_ROUTER_SYMBOL, provider: { useFactory: anotherResourceRouterFactory } },
+    { token: CAPABILITIES_ROUTER_SYMBOL, provider: { useFactory: capabilitiesRouterFactory } },
+    { token: MANAGER_ROUTER_SYMBOL, provider: { useFactory: managerRouterFactory } },
+    { token: OPA_ROUTER_SYMBOL, provider: { useFactory: opaRouterFactory } },
     {
       token: 'onSignal',
       provider: {

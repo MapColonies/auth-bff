@@ -1,124 +1,202 @@
-# Map Colonies typescript service template
+# Auth Manager BFF
 
-----------------------------------
+A Backend-For-Frontend (BFF) service that acts as the single entry point for the `auth-ui`. It routes traffic to the `auth-manager` service and multiple environment-specific Open Policy Agent (OPA) servers.
 
-This is a basic repo template for building new MapColonies web services in Typescript.
+## Overview
 
-> [!IMPORTANT]
-> To regenerate the types on openapi change run the command `npm run generate:openapi-types`.
+The BFF shields the frontend from backend complexity — the UI never needs to know how many backends exist, where they are, or whether they are enabled on a given deployment. The BFF handles routing, guards, error normalisation, and capability discovery on the UI's behalf.
 
-> [!WARNING]
-> After creating a new repo based on this template, you should delete the CODEOWNERS file.
+## Tech Stack
 
-
-## Development
-When in development you should use the command `npm run start:dev`. The main benefits are that it enables offline mode for the config package, and source map support for NodeJS errors.
-
-### Template Features:
-
-- eslint configuration by [@map-colonies/eslint-config](https://github.com/MapColonies/eslint-config)
-
-- prettier configuration by [@map-colonies/prettier-config](https://github.com/MapColonies/prettier-config)
-
-- jest
-
-- .nvmrc
-
-- Multi stage production-ready Dockerfile
-
-- commitlint
-
-- git hooks
-
-- logging by [@map-colonies/js-logger](https://github.com/MapColonies/js-logger)
-
-- OpenAPI request validation
-
-- config load with [node-config](https://www.npmjs.com/package/node-config)
-
-- Tracing and metrics by [@map-colonies/telemetry](https://github.com/MapColonies/telemetry)
-
-- github templates
-
-- bug report
-
-- feature request
-
-- pull request
-
-- github actions
-
-- on pull_request
-
-- LGTM
-
-- test
-
-- lint
-
-- snyk
+| Concern | Choice |
+|---|---|
+| Runtime | Node.js with TypeScript |
+| Framework | Express (via `ts-server-boilerplate`) |
+| Dependency Injection | TSyringe |
+| Proxying | `http-proxy-middleware` |
+| Request Validation | `express-openapi-validator` against `openapi3.yaml` |
+| Configuration | `@map-colonies/config` |
+| Observability | `@map-colonies/telemetry` (OpenTelemetry) |
 
 ## API
-Checkout the OpenAPI spec [here](/openapi3.yaml)
 
-## Installation
+### `GET /capabilities`
 
-Install deps with npm
+Returns the current state of the BFF so the `auth-ui` can adapt its interface at startup.
+
+```json
+{
+  "site": "AZURE",
+  "environments": ["prod", "integration", "qa"],
+  "features": {
+    "managerEnabled": true,
+    "opaEnabled": true
+  }
+}
+```
+
+### `/manager/*` — Auth Manager Proxy
+
+Proxies all traffic transparently to the `auth-manager` service. The `/manager` prefix is stripped before forwarding.
+
+```
+GET /manager/client  →  GET http://auth-manager.internal:8080/client
+```
+
+| Condition | Response |
+|---|---|
+| `manager.enabled: false` | `503 { "message": "Auth Manager capabilities are disabled on this node" }` |
+| Manager unreachable | `502 { "message": "Auth Manager is currently unreachable" }` |
+
+### `/opa/{environment}/evaluate/*` — OPA Proxy
+
+Proxies evaluation requests to the appropriate OPA server. Applies guards before forwarding.
+
+```
+POST /opa/prod/evaluate/authz/allow  →  POST http://opa-prod:8181/v1/data/authz/allow
+```
+
+| Guard | Condition | Response |
+|---|---|---|
+| Toggle | `opa.enabled: false` | `503` |
+| Method filter | Any method except `GET` / `POST` | `405` |
+| Environment validation | Environment not in config | `404` |
+| Proxy error | OPA server unreachable | `502 { message, environment, targetUrl }` |
+
+Only `GET` and `POST` are permitted — `PUT`, `PATCH`, and `DELETE` are blocked to prevent policy modification through the BFF.
+
+## Project Structure
+
+```
+src/
+  capabilities/
+    controllers/capabilitiesController.ts   HTTP layer
+    models/capabilitiesManager.ts           Business logic
+    routes/capabilitiesRouter.ts            Route wiring
+  manager/
+    middleware/managerMiddleware.ts         Toggle check, auth placeholder
+    routes/managerRouter.ts                 Proxy configuration
+  opa/
+    middleware/opaMiddleware.ts             Toggle, method filter, env validation, auth placeholder
+    routes/opaRouter.ts                     Proxy configuration
+  common/
+    config.ts                               Unified config (boilerplate + BFF fields)
+    constants.ts                            DI service tokens
+  containerConfig.ts                        DI container wiring
+  serverBuilder.ts                          Express setup and middleware chain
+config/
+  default.json                              Local development defaults
+openapi3.yaml                               API contract (capabilities endpoint)
+```
+
+## Configuration
+
+All configuration is managed through `@map-colonies/config`. In development, it reads from `config/default.json`. In production, it connects to the remote config server.
+
+### BFF-specific fields
+
+```json
+{
+  "site": "AZURE",
+  "cors": {
+    "allowedDomains": ["http://localhost:3000", "https://auth.mapcolonies.net"]
+  },
+  "manager": {
+    "enabled": true,
+    "url": "http://auth-manager.internal:8080"
+  },
+  "opa": {
+    "enabled": true,
+    "servers": {
+      "prod": "http://opa-prod.internal:8181",
+      "integration": "http://opa-int.internal:8181",
+      "qa": "http://opa-qa.internal:8181"
+    }
+  }
+}
+```
+
+The `manager.enabled` and `opa.enabled` flags allow individual proxy routes to be disabled per deployment without a code change or redeployment of the UI.
+
+## Development
+
+### Prerequisites
+
+- Node.js (see `.nvmrc` for version)
+- npm
+
+### Install dependencies
 
 ```bash
 npm install
 ```
 
-## Run Locally
-
-Clone the project
+### Run locally
 
 ```bash
-
-git clone https://link-to-project
-
+npm run start:dev
 ```
 
-Go to the project directory
+This enables `CONFIG_OFFLINE_MODE`, which reads configuration from `config/default.json` instead of connecting to the remote config server.
+
+### Run tests
 
 ```bash
-
-cd my-project
-
+npm run test          # all tests
+npm run test:unit     # unit tests only
+npm run test:integration  # integration tests only
 ```
 
-Install dependencies
+### Regenerate OpenAPI types
+
+Run this after any change to `openapi3.yaml`:
 
 ```bash
-
-npm install
-
+npm run generate:openapi-types
 ```
 
-Start the server
-
-```bash
-
-npm run start
+## Request Flow
 
 ```
-
-## Running Tests
-
-To run tests, run the following command
-
-```bash
-
-npm run test
-
+Request
+  │
+  ├── CORS middleware          validates origin against cors.allowedDomains
+  ├── Metrics + HTTP logger
+  ├── Compression
+  ├── Body parser              scoped to /capabilities only
+  ├── OpenAPI validator        native routes only — /manager and /opa are bypassed
+  │
+  ├── /capabilities ──────────► CapabilitiesController → CapabilitiesManager → config
+  │
+  ├── /manager/* ─────────────► managerEnabledMiddleware → authMiddleware → proxy
+  │                                                                           │
+  │                                                               http://auth-manager
+  │
+  └── /opa/{env}/evaluate/* ──► opaEnabledMiddleware → methodFilterMiddleware
+                                  → environmentMiddleware → authMiddleware → proxy
+                                                                              │
+                                                              http://opa-{env}:8181
+                                                              /v1/data/{policy path}
 ```
 
-To only run unit tests:
-```bash
-npm run test:unit
-```
+## OpenAPI Spec
 
-To only run integration tests:
+The `openapi3.yaml` file is the source of truth for native BFF endpoints. Proxy routes (`/manager/*`, `/opa/*`) are intentionally excluded from the spec — their contracts belong to `auth-manager` and OPA respectively.
+
+The interactive Swagger UI is available at `/docs` when the server is running.
+
+## Future: Authentication Phase
+
+An `authMiddleware` placeholder is already in place on both the `/manager/*` and `/opa/*` routes, currently passing all requests through. In the next phase this middleware will be populated to validate JWTs, making the BFF the Policy Enforcement Point for the `auth-ui`. No structural changes to the router or proxy logic will be required.
+
+## Contributing
+
+PR titles must include a Jira issue key (format: `MAPCO-1234`), e.g. [MAPCO-9305](https://mapcolonies.atlassian.net/browse/MAPCO-9305). Enforced by CI lint `jira/issue-validation`.
+
+## Deployment
+
+The service is deployed as a Kubernetes workload using the Helm chart in the `helm/` directory. Configuration is injected per environment via Helm values — the Docker image is identical across all environments.
+
 ```bash
-npm run test:integration
+helm upgrade --install auth-manager-bff ./helm -f helm/values-prod.yaml
 ```
