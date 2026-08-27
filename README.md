@@ -189,6 +189,10 @@ The interactive Swagger UI is available at `/docs` when the server is running.
 
 An `authMiddleware` placeholder is already in place on both the `/manager/*` and `/opa/*` routes, currently passing all requests through. In the next phase this middleware will be populated to validate JWTs, making the BFF the Policy Enforcement Point for the `auth-ui`. No structural changes to the router or proxy logic will be required.
 
+## Contributing
+
+PR titles must include a Jira issue key (format: `MAPCO-1234`), e.g. [MAPCO-9305](https://mapcolonies.atlassian.net/browse/MAPCO-9305). Enforced by CI lint `jira/issue-validation`.
+
 ## Deployment
 
 The service is deployed as a Kubernetes workload using the Helm chart in the `helm/` directory. Configuration is injected per environment via Helm values — the Docker image is identical across all environments.
