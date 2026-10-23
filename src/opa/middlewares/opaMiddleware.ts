@@ -4,16 +4,6 @@ import type { ConfigType } from '@common/config';
 
 const ALLOWED_METHODS = ['GET', 'POST'];
 
-export const createOpaEnabledMiddleware = (config: ConfigType) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
-    if (!config.get('opa.enabled')) {
-      res.status(httpStatus.SERVICE_UNAVAILABLE).json({ message: 'OPA capabilities are disabled on this node' });
-      return;
-    }
-    next();
-  };
-};
-
 // No config dependency — stays as a plain function
 export const opaMethodFilterMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   if (!ALLOWED_METHODS.includes(req.method.toUpperCase())) {

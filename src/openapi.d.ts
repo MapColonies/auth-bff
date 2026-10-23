@@ -56,8 +56,8 @@ export type components = {
        *     The UI uses this list to populate environment selectors.
        * @example [
        *       "prod",
-       *       "integration",
-       *       "qa"
+       *       "stage",
+       *       "np"
        *     ]
        */
       environments: string[];
@@ -106,8 +106,8 @@ export interface operations {
            *       "site": "israel-dc-1",
            *       "environments": [
            *         "prod",
-           *         "integration",
-           *         "qa"
+           *         "stage",
+           *         "np"
            *       ],
            *       "features": {
            *         "managerEnabled": true,

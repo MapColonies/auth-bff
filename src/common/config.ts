@@ -1,43 +1,48 @@
 import { type ConfigInstance, config } from '@map-colonies/config';
 import { commonBoilerplateV3, type commonBoilerplateV3Type } from '@map-colonies/schemas';
 
-// Extend the boilerplate schema by spreading its properties and adding BFF-specific ones.
-// The spread preserves 'unevaluatedProperties: false' from the base schema,
-// and adding our fields to 'properties' means they ARE evaluated — so no validation error.
+// TODO: move to @map-colonies/schemas. Until then the boilerplate is deep-cloned and given its own $id —
+// @map-colonies/config fetches the remote config by $id, so reusing common/boilerplate/v3 would collide with it.
+const baseSchema = structuredClone(commonBoilerplateV3);
 
 const bffSchema = {
-  ...commonBoilerplateV3,
+  ...baseSchema,
+  $id: 'https://mapcolonies.com/infra/opala/bff/v1',
+  title: 'opalaBffSchemaV1',
+  description: 'The opala auth BFF service schema',
   properties: {
-    ...commonBoilerplateV3.properties,
-    site: { type: 'string' },
+    ...baseSchema.properties,
+    site: { type: 'string', 'x-env-value': 'SITE' },
     cors: {
       type: 'object',
       required: ['allowedDomains'],
       properties: {
-        allowedDomains: { type: 'array', items: { type: 'string' } },
+        allowedDomains: { type: 'array', items: { type: 'string' }, 'x-env-value': 'CORS_ALLOWED_DOMAINS', 'x-env-format': 'json' },
       },
     },
     manager: {
       type: 'object',
       required: ['enabled', 'url'],
       properties: {
-        enabled: { type: 'boolean' },
-        url: { type: 'string' },
+        enabled: { type: 'boolean', 'x-env-value': 'MANAGER_ENABLED' },
+        url: { type: 'string', 'x-env-value': 'MANAGER_URL' },
       },
     },
     opa: {
       type: 'object',
       required: ['enabled', 'servers'],
       properties: {
-        enabled: { type: 'boolean' },
+        enabled: { type: 'boolean', 'x-env-value': 'OPA_ENABLED' },
         servers: {
           type: 'object',
           additionalProperties: { type: 'string' },
+          'x-env-value': 'OPA_SERVERS',
+          'x-env-format': 'json',
         },
       },
     },
   },
-  required: [...(Array.isArray(commonBoilerplateV3.required) ? commonBoilerplateV3.required : []), 'site', 'cors', 'manager', 'opa'],
+  required: [...baseSchema.required, 'site', 'cors', 'manager', 'opa'],
 };
 
 type ConfigType = ConfigInstance<commonBoilerplateV3Type & BffConfig>;

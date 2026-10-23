@@ -8,24 +8,31 @@ import { getApp } from '@src/app';
 import { SERVICES } from '@common/constants';
 import { initConfig, getConfig } from '@common/config';
 
-describe('manager', function () {
-  let app: Application;
+const buildApp = async (configOverrides: Record<string, unknown> = {}): Promise<Application> => {
+  const config = getConfig();
+  const originalGet = config.get.bind(config);
+  vi.spyOn(config, 'get').mockImplementation((key: string) => (key in configOverrides ? configOverrides[key] : originalGet(key as never)));
 
-  beforeAll(async function () {
-    await initConfig(true);
-    const config = getConfig();
-    const originalGet = config.get.bind(config);
-    vi.spyOn(config, 'get').mockImplementation((key: string) => (key === 'manager.url' ? 'http://127.0.0.1:9' : originalGet(key as never)));
-
-    [app] = await getApp({
+  try {
+    const [app] = await getApp({
       override: [
         { token: SERVICES.LOGGER, provider: { useValue: await jsLogger({ enabled: false }) } },
         { token: SERVICES.TRACER, provider: { useValue: trace.getTracer('testTracer') } },
       ],
       useChild: true,
     });
-
+    return app;
+  } finally {
     vi.restoreAllMocks();
+  }
+};
+
+describe('manager', function () {
+  let app: Application;
+
+  beforeAll(async function () {
+    await initConfig(true);
+    app = await buildApp({ 'manager.url': 'http://127.0.0.1:9' });
   });
 
   afterEach(function () {
@@ -44,31 +51,20 @@ describe('manager', function () {
 
     describe('Bad Path', function () {
       it('should return 503 when manager.enabled is false', async function () {
-        const config = getConfig();
-        vi.spyOn(config, 'get').mockImplementation((key: string) => (key === 'manager.enabled' ? false : config.get(key as never)));
+        const disabledApp = await buildApp({ 'manager.enabled': false });
 
-        const response = await agent(app).get('/manager/client');
+        const response = await agent(disabledApp).get('/manager/client');
 
         expect(response.status).toBe(StatusCodes.SERVICE_UNAVAILABLE);
         expect(response.body).toMatchObject({ message: 'Auth Manager capabilities are disabled on this node' });
       });
-    });
 
-    describe('Sad Path', function () {
-      it('should return 500 when an unexpected error is thrown while checking manager.enabled', async function () {
-        const config = getConfig();
-        const originalGet = config.get.bind(config);
-        vi.spyOn(config, 'get').mockImplementation((key: string) => {
-          if (key === 'manager.enabled') {
-            throw new Error('unexpected config error');
-          }
-          return originalGet(key as never);
-        });
+      it('should start without manager.url when manager.enabled is false', async function () {
+        const disabledApp = await buildApp({ 'manager.enabled': false, 'manager.url': undefined });
 
-        const response = await agent(app).get('/manager/client');
+        const response = await agent(disabledApp).get('/manager/client');
 
-        expect(response.status).toBe(StatusCodes.INTERNAL_SERVER_ERROR);
-        expect(response.body).toMatchObject({ message: 'unexpected config error' });
+        expect(response.status).toBe(StatusCodes.SERVICE_UNAVAILABLE);
       });
     });
   });

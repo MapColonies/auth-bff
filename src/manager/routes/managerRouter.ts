@@ -4,13 +4,18 @@ import type { FactoryFunction } from 'tsyringe';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { SERVICES } from '@common/constants';
 import type { ConfigType } from '@common/config';
-import { asyncHandler } from '@common/middlewares/asyncHandler';
 import { authMiddleware } from '@src/common/middlewares/authMiddleware';
-import { createManagerEnabledMiddleware } from '../middleware/managerMiddleware';
 
 const managerRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
   const config = dependencyContainer.resolve<ConfigType>(SERVICES.CONFIG);
   const router = Router();
+
+  if (!config.get('manager.enabled')) {
+    router.use('/', (req, res) => {
+      res.status(httpStatus.SERVICE_UNAVAILABLE).json({ message: 'Auth Manager capabilities are disabled on this node' });
+    });
+    return router;
+  }
 
   const managerHandler = createProxyMiddleware({
     target: config.get('manager.url'),
@@ -22,14 +27,10 @@ const managerRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
     },
   });
 
-  router.use(
-    '/',
-    createManagerEnabledMiddleware(config),
-    authMiddleware,
-    asyncHandler((req, res, next) => {
-      void managerHandler(req, res, next);
-    })
-  );
+  // @typescript-eslint/no-misused-promises: the proxy handles its own promise via on.error
+  router.use('/', authMiddleware, (req, res, next) => {
+    void managerHandler(req, res, next);
+  });
 
   return router;
 };

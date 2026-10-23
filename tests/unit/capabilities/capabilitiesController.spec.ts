@@ -37,7 +37,7 @@ describe('CapabilitiesController', () => {
       it('should respond with 200 and the manager result', function () {
         managerMock.getCapabilities.mockReturnValue({
           site: 'AZURE',
-          environments: ['prod', 'qa'],
+          environments: ['prod', 'np'],
           features: { managerEnabled: true, opaEnabled: true },
         });
 
@@ -50,7 +50,7 @@ describe('CapabilitiesController', () => {
         expect(res.status).toHaveBeenCalledWith(httpStatus.OK);
         expect(res.json).toHaveBeenCalledWith({
           site: 'AZURE',
-          environments: ['prod', 'qa'],
+          environments: ['prod', 'np'],
           features: { managerEnabled: true, opaEnabled: true },
         });
       });

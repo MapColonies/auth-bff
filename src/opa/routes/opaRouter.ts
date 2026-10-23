@@ -4,13 +4,19 @@ import type { FactoryFunction } from 'tsyringe';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { SERVICES } from '@common/constants';
 import type { ConfigType, Environment } from '@common/config';
-import { asyncHandler } from '@common/middlewares/asyncHandler';
 import { authMiddleware } from '@common/middlewares/authMiddleware';
-import { createOpaEnabledMiddleware, opaMethodFilterMiddleware, createOpaEnvironmentMiddleware } from '../middlewares/opaMiddleware';
+import { opaMethodFilterMiddleware, createOpaEnvironmentMiddleware } from '../middlewares/opaMiddleware';
 
 const opaRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
   const config = dependencyContainer.resolve<ConfigType>(SERVICES.CONFIG);
   const router = Router();
+
+  if (!config.get('opa.enabled')) {
+    router.use('/', (req, res) => {
+      res.status(httpStatus.SERVICE_UNAVAILABLE).json({ message: 'OPA capabilities are disabled on this node' });
+    });
+    return router;
+  }
 
   const opaHandler = createProxyMiddleware({
     target: 'http://placeholder',
@@ -20,10 +26,7 @@ const opaRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
       const servers = config.get('opa.servers');
       return servers[environment];
     },
-    pathRewrite: (path, req) => {
-      const environment = (req as Request).params['environment'] as string;
-      return path.replace(`/${environment}/evaluate`, '/v1/data');
-    },
+    pathRewrite: (path) => `/v1/data${path}`,
     on: {
       error: (err, req, res) => {
         const environment = ((req as Request).params['environment'] ?? '') as Environment;
@@ -40,13 +43,13 @@ const opaRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
 
   router.use(
     '/:environment/evaluate',
-    createOpaEnabledMiddleware(config),
     opaMethodFilterMiddleware,
     createOpaEnvironmentMiddleware(config),
     authMiddleware,
-    asyncHandler((req, res, next) => {
+    // @typescript-eslint/no-misused-promises: the proxy handles its own promise via on.error
+    (req, res, next) => {
       void opaHandler(req, res, next);
-    })
+    }
   );
 
   return router;

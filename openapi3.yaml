@@ -49,8 +49,8 @@ paths:
                 site: israel-dc-1
                 environments:
                   - prod
-                  - integration
-                  - qa
+                  - stage
+                  - np
                 features:
                   managerEnabled: true
                   opaEnabled: true
@@ -112,8 +112,8 @@ components:
           minItems: 0
           example:
             - prod
-            - integration
-            - qa
+            - stage
+            - np
         features:
           type: object
           description: Feature flags indicating which proxy capabilities are active on this node.

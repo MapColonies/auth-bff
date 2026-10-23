@@ -3,8 +3,7 @@ import { mockDeep, type DeepMockProxy } from 'vitest-mock-extended';
 import httpStatus from 'http-status-codes';
 import type { Request, Response, NextFunction } from 'express';
 import type { ConfigType } from '@common/config';
-import { createOpaEnabledMiddleware, opaMethodFilterMiddleware, createOpaEnvironmentMiddleware } from '@src/opa/middlewares/opaMiddleware';
-import { authMiddleware } from '@src/common/middlewares/authMiddleware';
+import { opaMethodFilterMiddleware, createOpaEnvironmentMiddleware } from '@src/opa/middlewares/opaMiddleware';
 
 let configMock: DeepMockProxy<ConfigType>;
 
@@ -29,43 +28,6 @@ describe('opaMiddleware', () => {
 
   afterEach(function () {
     vi.clearAllMocks();
-  });
-
-  describe('#createOpaEnabledMiddleware', () => {
-    describe('#HappyPath', () => {
-      it('should call next() when opa.enabled is true', function () {
-        configMock.get.mockReturnValue(true);
-        const middleware = createOpaEnabledMiddleware(configMock);
-
-        const req = mockRequest();
-        const res = mockResponse();
-        const next: NextFunction = vi.fn();
-
-        middleware(req, res, next);
-
-        expect(next).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(res.status).not.toHaveBeenCalled();
-      });
-    });
-
-    describe('#SadPath', () => {
-      it('should respond with 503 when opa.enabled is false', function () {
-        configMock.get.mockReturnValue(false);
-        const middleware = createOpaEnabledMiddleware(configMock);
-
-        const req = mockRequest();
-        const res = mockResponse();
-        const next: NextFunction = vi.fn();
-
-        middleware(req, res, next);
-
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(res.status).toHaveBeenCalledWith(httpStatus.SERVICE_UNAVAILABLE);
-        expect(res.json).toHaveBeenCalledWith({ message: 'OPA capabilities are disabled on this node' });
-        expect(next).not.toHaveBeenCalled();
-      });
-    });
   });
 
   describe('#opaMethodFilterMiddleware', () => {
@@ -159,22 +121,6 @@ describe('opaMiddleware', () => {
         expect(res.status).toHaveBeenCalledWith(httpStatus.NOT_FOUND);
         expect(res.json).toHaveBeenCalledWith({ message: `OPA environment 'nonexistent' not found` });
         expect(next).not.toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('#authMiddleware', () => {
-    describe('#HappyPath', () => {
-      it('should always call next()', function () {
-        const req = mockRequest();
-        const res = mockResponse();
-        const next: NextFunction = vi.fn();
-
-        authMiddleware(req, res, next);
-
-        expect(next).toHaveBeenCalledOnce();
-        // eslint-disable-next-line @typescript-eslint/unbound-method
-        expect(res.status).not.toHaveBeenCalled();
       });
     });
   });

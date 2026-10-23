@@ -30,7 +30,7 @@ describe('CapabilitiesManager', () => {
         configMock.get.mockImplementation((key: string) => {
           const values: Record<string, unknown> = {
             site: 'AZURE',
-            'opa.servers': { prod: 'http://opa-prod:8181', qa: 'http://opa-qa:8181' },
+            'opa.servers': { prod: 'http://opa-prod:8181', np: 'http://opa-np:8181' },
             'manager.enabled': true,
             'opa.enabled': true,
           };
@@ -41,7 +41,7 @@ describe('CapabilitiesManager', () => {
 
         expect(capabilities).toMatchObject({
           site: 'AZURE',
-          environments: ['prod', 'qa'],
+          environments: ['prod', 'np'],
           features: { managerEnabled: true, opaEnabled: true },
         });
       });

@@ -27,7 +27,7 @@ Returns the current state of the BFF so the `auth-ui` can adapt its interface at
 ```json
 {
   "site": "AZURE",
-  "environments": ["prod", "integration", "qa"],
+  "environments": ["prod", "stage", "np"],
   "features": {
     "managerEnabled": true,
     "opaEnabled": true
@@ -74,11 +74,10 @@ src/
     models/capabilitiesManager.ts           Business logic
     routes/capabilitiesRouter.ts            Route wiring
   manager/
-    middleware/managerMiddleware.ts         Toggle check, auth placeholder
-    routes/managerRouter.ts                 Proxy configuration
+    routes/managerRouter.ts                 Toggle, proxy configuration
   opa/
-    middleware/opaMiddleware.ts             Toggle, method filter, env validation, auth placeholder
-    routes/opaRouter.ts                     Proxy configuration
+    middleware/opaMiddleware.ts             Method filter, env validation
+    routes/opaRouter.ts                     Toggle, proxy configuration
   common/
     config.ts                               Unified config (boilerplate + BFF fields)
     constants.ts                            DI service tokens
@@ -109,8 +108,8 @@ All configuration is managed through `@map-colonies/config`. In development, it 
     "enabled": true,
     "servers": {
       "prod": "http://opa-prod.internal:8181",
-      "integration": "http://opa-int.internal:8181",
-      "qa": "http://opa-qa.internal:8181"
+      "stage": "http://opa-stage.internal:8181",
+      "np": "http://opa-np.internal:8181"
     }
   }
 }
