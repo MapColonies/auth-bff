@@ -1,0 +1,16 @@
+import { Router } from 'express';
+import type { FactoryFunction } from 'tsyringe';
+import { CapabilitiesController } from '../controllers/capabilitiesController';
+
+const capabilitiesRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
+  const router = Router();
+  const controller = dependencyContainer.resolve(CapabilitiesController);
+
+  router.get('/', controller.getCapabilities);
+
+  return router;
+};
+
+export const CAPABILITIES_ROUTER_SYMBOL = Symbol('capabilitiesRouterFactory');
+
+export { capabilitiesRouterFactory };

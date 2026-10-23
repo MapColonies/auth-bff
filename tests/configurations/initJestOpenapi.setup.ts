@@ -9,4 +9,4 @@ globalThis.expect = expect;
 jestOpenApi(path.join(process.cwd(), 'openapi3.yaml'));
 
 //@ts-ignore
-globalThis.expect = undefined as any; // Reset global expect to avoid conflicts with other test frameworks
+globalThis.expect = undefined as any;

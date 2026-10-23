@@ -1,16 +1,9 @@
-import { defineConfig, ViteUserConfig } from 'vitest/config';
+import { defineConfig, type ViteUserConfig } from 'vitest/config';
 import tsconfig from './tsconfig.json';
 import path from 'path';
 
-// Create an alias object from the paths in tsconfig.json
 const pathAlias = Object.fromEntries(
-  // For Each Path in tsconfig.json
-  Object.entries(tsconfig.compilerOptions.paths).map(([key, [value]]) => [
-    // Remove the "/*" from the key and resolve the path
-    key.replace('/*', ''),
-    // Remove the "/*" from the value Resolve the relative path
-    path.resolve(__dirname, value.replace('/*', '')),
-  ])
+  Object.entries(tsconfig.compilerOptions.paths).map(([key, [value]]) => [key.replace('/*', ''), path.resolve(__dirname, value.replace('/*', ''))])
 );
 
 const reporters: Exclude<ViteUserConfig['test'], undefined>['reporters'] = ['default', 'html'];
@@ -50,7 +43,16 @@ export default defineConfig({
       enabled: true,
       reporter: ['text', 'html', 'json', 'json-summary'],
       include: ['src/**/*.ts'],
-      exclude: ['**/vendor/**', 'node_modules/**'],
+      exclude: [
+        '**/vendor/**',
+        'node_modules/**',
+        '**/openapi.d.ts',
+        '**/index.ts',
+        '**/constants.ts',
+        '**/dependencyRegistration.ts',
+        '**/tracing.ts',
+        '**/instrumentation.mts',
+      ],
       reportOnFailure: true,
       thresholds: {
         global: {
